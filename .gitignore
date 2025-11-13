@@ -173,6 +173,8 @@ docker-compose.override.yml
 /private/
 /tmp/
 /.cache/
-
+src/
+outputs/
+results/
 
 *.pt
