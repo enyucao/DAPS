@@ -21,7 +21,7 @@ mpmath==1.3.0
 networkx==3.1
 numpy==1.24.4
 omegaconf==2.3.0
-packaging==21.3
+#packaging==21.3
 pillow==10.3.0
 piq==0.8.0
 platformdirs==4.2.2
@@ -50,7 +50,7 @@ torchdiffeq==0.2.5
 diffusers==0.32.2
 huggingface-hub==0.29.3
 importlib-metadata==8.5.0
-regex-2024==11.6
+regex==2024.11.6
 safetensors==0.5.3
 zipp==3.20.2
 tokenizers==0.20.3
@@ -58,4 +58,4 @@ transformers==4.46.3
 pytorch-lightning==1.0.8
 einops==0.8.1
 kornia==0.7.3
--e git+https://github.com/openai/CLIP.git@main#egg=clip
+#-e git+https://github.com/openai/CLIP.git@main#egg=clip
