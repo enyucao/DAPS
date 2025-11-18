@@ -194,15 +194,23 @@ class StructuralSimilarityIndexMeasure(EvalFn):
 class LearnedPerceptualImagePatchSimilarity(EvalFn):
     cmp = 'min'  # the higher, the better
 
-    def __init__(self, batch_size=128):
+    def __init__(self, batch_size=128, use_gpu=True):
         self.batch_size = batch_size
         self.lpips_fn = LPIPS(replace_pooling=True, reduction='none')
+        if not use_gpu:
+            self.lpips_fn = self.lpips_fn.cpu()
+        self.use_gpu = use_gpu
 
     def evaluate_in_batch(self, gt, pred):
         batch_size = self.batch_size
         results = []
         for start in range(0, gt.shape[0], batch_size):
-            res = self.lpips_fn(self.norm(gt[start:start+batch_size]), self.norm(pred[start:start+batch_size]))
+            gt_batch = self.norm(gt[start:start+batch_size])
+            pred_batch = self.norm(pred[start:start+batch_size])
+            if not self.use_gpu:
+                gt_batch = gt_batch.cpu()
+                pred_batch = pred_batch.cpu()
+            res = self.lpips_fn(gt_batch, pred_batch)
             results.append(res)
         results = torch.cat(results, dim=0)
         return results

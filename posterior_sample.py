@@ -190,7 +190,10 @@ def main(args):
     # get evaluator
     eval_fn_list = []
     for eval_fn_name in args.eval_fn_list:
-        eval_fn_list.append(get_eval_fn(eval_fn_name))
+        if eval_fn_name == 'lpips':
+            eval_fn_list.append(get_eval_fn(eval_fn_name, use_gpu=args.lpips_gpu))
+        else:
+            eval_fn_list.append(get_eval_fn(eval_fn_name))
     evaluator = Evaluator(eval_fn_list)
 
     # log hyperparameters and configurations
