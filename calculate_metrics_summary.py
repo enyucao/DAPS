@@ -16,7 +16,7 @@ def calculate_summary(result_dir):
     # Extract values for each metric
     psnr_values = data['psnr']['mean']
     ssim_values = data['ssim']['mean'] 
-    lpips_values = data['lpips']['mean']
+    lpips_values = data.get('lpips', {}).get('mean', None)
     
     # Read FID score if exists
     fid_score = None
@@ -32,7 +32,10 @@ def calculate_summary(result_dir):
     print("=" * 40)
     print(f"PSNR: {np.mean(psnr_values):.2f} ± {np.std(psnr_values):.2f} dB")
     print(f"SSIM: {np.mean(ssim_values):.3f} ± {np.std(ssim_values):.3f}")
-    print(f"LPIPS: {np.mean(lpips_values):.3f} ± {np.std(lpips_values):.3f}")
+    if lpips_values is not None:
+        print(f"LPIPS: {np.mean(lpips_values):.3f} ± {np.std(lpips_values):.3f}")
+    else:
+        print("LPIPS: 未计算 (使用 eval_fn_list=['psnr','ssim','lpips'] 来计算)")
     if fid_score is not None:
         print(f"FID: {fid_score:.4f}")
     else:
@@ -41,8 +44,12 @@ def calculate_summary(result_dir):
     
     # Show per-image breakdown
     print("\nPer-image breakdown:")
-    for i, (p, s, l) in enumerate(zip(psnr_values, ssim_values, lpips_values)):
-        print(f"Image {i:2d}: PSNR={p:5.2f}, SSIM={s:.3f}, LPIPS={l:.3f}")
+    if lpips_values is not None:
+        for i, (p, s, l) in enumerate(zip(psnr_values, ssim_values, lpips_values)):
+            print(f"Image {i:2d}: PSNR={p:5.2f}, SSIM={s:.3f}, LPIPS={l:.3f}")
+    else:
+        for i, (p, s) in enumerate(zip(psnr_values, ssim_values)):
+            print(f"Image {i:2d}: PSNR={p:5.2f}, SSIM={s:.3f}")
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
