@@ -18,6 +18,8 @@ import setproctitle
 from PIL import Image
 import numpy as np
 import imageio
+from tqdm import tqdm
+import time
 
 import os
 
@@ -109,18 +111,30 @@ def save_mp4_video(gt, y, x0hat_traj, x0y_traj, xt_traj, output_path, fps=24, se
     writer.close()
 
 
-def sample_in_batch(sampler, model, x_start, operator, y, evaluator, verbose, record, batch_size, gt, args, root, run_id):
+def sample_in_batch(sampler, model, x_start, operator, y, evaluator, verbose, record, batch_size, gt, args, root, run_id, pbar=None):
     """
         posterior sampling in batch
     """
     samples = []
     trajs = []
-    for s in range(0, len(x_start), batch_size):
+    batch_ranges = list(range(0, len(x_start), batch_size))
+    
+    for i, s in enumerate(batch_ranges):
         # update evaluator to correct batch index
         cur_x_start = x_start[s:s + batch_size]
         cur_y = y[s:s + batch_size]
         cur_gt = gt[s: s + batch_size]
+        
+        batch_start_time = time.time()
         cur_samples = sampler.sample(model, cur_x_start, operator, cur_y, evaluator, verbose=verbose, record=record, gt=cur_gt)
+        batch_time = time.time() - batch_start_time
+        
+        # Update progress bar
+        if pbar is not None:
+            pbar.set_postfix({
+                'Batch': f'{i+1}/{len(batch_ranges)}'
+            })
+            pbar.update(1)
 
         samples.append(cur_samples)
         if record:
@@ -215,13 +229,22 @@ def main(args):
     # main sampling process
     full_samples = []
     full_trajs = []
-    for r in range(args.num_runs):
-        print(f'Run: {r}')
-        x_start = sampler.get_start(images.shape[0], model)
-        samples, trajs = sample_in_batch(sampler, model, x_start, operator, y, evaluator, verbose=True, record=args.save_traj, 
-                                         batch_size=args.batch_size, gt=images, args=args, root=root, run_id=r)
-        full_samples.append(samples)
-        full_trajs.append(trajs)
+    
+    # Calculate total batches for progress tracking
+    num_batches_per_run = (total_number + args.batch_size - 1) // args.batch_size
+    total_batches = args.num_runs * num_batches_per_run
+    
+    print(f'Starting sampling: {args.num_runs} runs × {num_batches_per_run} batches = {total_batches} total batches')
+    
+    with tqdm(total=total_batches, desc='Overall Progress', unit='batch', unit_scale=False) as overall_pbar:
+        for r in range(args.num_runs):
+            overall_pbar.set_description(f'Run {r+1}/{args.num_runs}')
+            x_start = sampler.get_start(images.shape[0], model)
+            samples, trajs = sample_in_batch(sampler, model, x_start, operator, y, evaluator, verbose=True, record=args.save_traj, 
+                                             batch_size=args.batch_size, gt=images, args=args, root=root, run_id=r, pbar=overall_pbar)
+            full_samples.append(samples)
+            full_trajs.append(trajs)
+    
     full_samples = torch.stack(full_samples, dim=0)
 
     # evaluate and log metrics
