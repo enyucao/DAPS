@@ -89,7 +89,8 @@ def create_model(
     )
 
     try:
-        model.load_state_dict(th.load(model_path, map_location='cpu'))
+        # 添加weights_only=False来消除警告，因为我们信任预训练模型
+        model.load_state_dict(th.load(model_path, map_location='cpu', weights_only=False))
     except Exception as e:
         print(f"Got exception: {e} / Randomly initialize")
     return model
