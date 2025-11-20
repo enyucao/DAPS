@@ -178,3 +178,9 @@ outputs/
 results/
 
 *.pt
+*.pth
+*.ckpt
+
+# Model checkpoints and datasets
+checkpoints/
+dataset/
