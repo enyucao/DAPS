@@ -20,7 +20,10 @@ class Trajectory(nn.Module):
         """
         if name not in self.tensor_data:
             self.tensor_data[name] = []
-        self.tensor_data[name].append(images.detach().cpu())
+        # Move to CPU and clear GPU memory immediately
+        cpu_tensor = images.detach().cpu()
+        self.tensor_data[name].append(cpu_tensor)
+        del cpu_tensor
 
     def add_value(self, name, values):
         """
@@ -59,7 +62,13 @@ class Trajectory(nn.Module):
         """
         merged_traj = cls()
         for name in trajs[0].tensor_data.keys():
-            merged_traj.tensor_data[name] = torch.cat([traj.tensor_data[name] for traj in trajs], dim=1)
+            # Merge tensors one by one to avoid memory spike
+            tensor_list = []
+            for traj in trajs:
+                tensor_list.append(traj.tensor_data[name])
+            merged_traj.tensor_data[name] = torch.cat(tensor_list, dim=1)
+            # Clear intermediate tensors to free memory
+            del tensor_list
         for name in trajs[0].value_data.keys():
             merged_traj.value_data[name] = trajs[0].value_data[name]
         return merged_traj

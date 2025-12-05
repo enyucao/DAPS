@@ -140,6 +140,8 @@ def sample_in_batch(sampler, model, x_start, operator, y, evaluator, verbose, re
         if record:
             cur_trajs = sampler.trajectory.compile()
             trajs.append(cur_trajs)
+            # Clear GPU memory after each batch
+            torch.cuda.empty_cache()
 
         # log individual sample instances
         if args.save_samples:
@@ -169,7 +171,14 @@ def sample_in_batch(sampler, model, x_start, operator, y, evaluator, verbose, re
                 save_image(selected_traj_grid * 0.5 + 0.5, fp=traj_grid_path, nrow=len(slices))
         
     if record:
-        trajs = Trajectory.merge(trajs)
+        try:
+            trajs = Trajectory.merge(trajs)
+        except RuntimeError as e:
+            if "not enough memory" in str(e):
+                print(f"Warning: Not enough memory to merge trajectories. Skipping trajectory merge.")
+                trajs = None
+            else:
+                raise e
     return torch.cat(samples, dim=0), trajs
 
 
