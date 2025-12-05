@@ -10,6 +10,10 @@ from evaluate_fid import calculate_fid
 from eval import get_eval_fn_cmp, Evaluator
 import yaml
 import argparse
+import warnings
+
+# Filter torchvision deprecation warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='torchvision')
 
 def tensor_to_pils(x):
     """[B, C, H, W] tensor -> list of pil images"""

@@ -6,6 +6,10 @@ from pathlib import Path
 from PIL import Image
 from piq import LPIPS
 from tqdm import tqdm
+import warnings
+
+# Filter torchvision deprecation warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='torchvision')
 
 def load_image_as_tensor(image_path):
     """Load image and convert to tensor [-1, 1]"""
@@ -98,6 +102,12 @@ def calculate_lpips_for_results(result_dir, use_gpu=True, force_calculate=False)
     
     with tqdm(total=len(sample_groups), desc="LPIPS", unit="img") as pbar:
         for img_idx in sorted(sample_groups.keys()):
+            # Skip if image index exceeds GT images 
+            # This happens if results are saved in same folder
+            if img_idx >= len(gt_images):
+                print(f"⚠️  Skipping image {img_idx}, GT only has {len(gt_images)} images")
+                pbar.update(1)
+                continue
             gt_tensor = gt_images[img_idx:img_idx+1].to(device)  # [1, C, H, W]
             
             img_lpips = []
